@@ -1,8 +1,10 @@
 const httpStatus = require('http-status');
 const User = require('../models/user.model');
 const RefreshToken = require('../models/refreshToken.model');
+const ResetToken = require('../models/refreshToken.model');
 const moment = require('moment-timezone');
 const { jwtExpirationInterval } = require('../../config/vars');
+const { mail } = require('../utils/email');
 
 /**
 * Returns a formated object with tokens
@@ -56,7 +58,19 @@ exports.passwordReset = async (req, res, next) => {
   try {
     const { email, url } = req.body;
     const { user, resetToken } = await User.findAndGenerateResetToken(req.body);
-    // Send reset email to `email` directing them to `url?token=resetToken`
+    // Send reset email to `email` directing them to `url?token=resetToken.token`
+    mail({
+      to: email,
+      subject: '[API] Password Reset Requested',
+      message: `
+        <h3>Reset your API password?</h3>
+        <p>
+          If you requested a password reset for ${email}, click the link below. If you
+          didn't make this request, ignore this email.
+        </p>
+        <a href="${url}?token=${resetToken.token}">Reset Password</a> 
+      `,
+    });
     const userTransformed = user.transform();
     return res.json({
       user: userTransformed,
@@ -64,6 +78,34 @@ exports.passwordReset = async (req, res, next) => {
     });
   } catch (error) {
     return next(error);
+  }
+};
+
+/**
+ * Returns success with a valid, existing email + token 
+ * and removes any existing refresh (jwt) and reset tokens
+ * for the user identified by the email.
+ * @public
+ */
+exports.passwordResetChange = async (req, res, next) => {
+  try {
+    // All fields preset and password/confirm match by here
+    const { email, password, confirm, token } = req.body;
+    // Ensure user is valid
+    const user = await User.getByEmail(email);
+    // Find a matching reset token and clear out tokens
+    const valid = await User.matchAndClearAllTokens({ email, token });
+    // Update password for user
+    user.password = password;
+    user.save();
+
+    const userTransformed = user.transform();
+    return res.json({
+      user: userTransformed,
+      message: `Password for user ${user.email} reset`,
+    });
+  } catch (err) {
+    return next(err);
   }
 };
 

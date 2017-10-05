@@ -17,15 +17,12 @@
     "prestart": "yarn docs",
     "start": "cross-env NODE_ENV=production pm2 start ./src/index.js",
     "dev": "nodemon ./src/index.js",
-    "lint":
-      "eslint **/*.js --ignore-path .gitignore --ignore-pattern internals/scripts",
+    "lint": "eslint **/*.js --ignore-path .gitignore --ignore-pattern internals/scripts",
     "lint:fix": "yarn lint -- --fix",
     "lint:watch": "yarn lint -- --watch",
-    "test":
-      "cross-env NODE_ENV=test nyc --reporter=html --reporter=text mocha --timeout 20000 --recursive src/api/tests",
+    "test": "cross-env NODE_ENV=test nyc --reporter=html --reporter=text mocha --timeout 20000 --recursive src/api/tests",
     "test:unit": "cross-env NODE_ENV=test mocha src/api/tests/unit",
-    "test:integration":
-      "cross-env NODE_ENV=test mocha --timeout 20000 src/api/tests/integration",
+    "test:integration": "cross-env NODE_ENV=test mocha --timeout 20000 src/api/tests/integration",
     "test:watch": "cross-env NODE_ENV=test mocha --watch src/api/tests/unit",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
     "postcoverage": "opn coverage/lcov-report/index.html",
@@ -33,14 +30,10 @@
     "postpublish": "git push --tags",
     "docs": "apidoc -i src -o docs",
     "postdocs": "opn docs/index.html",
-    "docker:start":
-      "cross-env NODE_ENV=production pm2-docker start ./src/index.js",
-    "docker:prod":
-      "docker-compose -f docker-compose.yml -f docker-compose.prod.yml up",
-    "docker:dev":
-      "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up",
-    "docker:test":
-      "docker-compose -f docker-compose.yml -f docker-compose.test.yml up --abort-on-container-exit"
+    "docker:start": "cross-env NODE_ENV=production pm2-docker start ./src/index.js",
+    "docker:prod": "docker-compose -f docker-compose.yml -f docker-compose.prod.yml up",
+    "docker:dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up",
+    "docker:test": "docker-compose -f docker-compose.yml -f docker-compose.test.yml up --abort-on-container-exit"
   },
   "repository": {
     "type": "git",
@@ -89,6 +82,7 @@
     "moment-timezone": "^0.5.13",
     "mongoose": "^4.9.7",
     "morgan": "^1.8.1",
+    "nodemailer": "^4.1.2",
     "passport": "^0.4.0",
     "passport-http-bearer": "^1.0.1",
     "passport-jwt": "3.0.0",
