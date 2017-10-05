@@ -6,6 +6,7 @@ const {
   login,
   register,
   passwordReset,
+  passwordResetChange,
   // oAuth,
   refresh,
 } = require('../../validations/auth.validation');
@@ -70,10 +71,34 @@ router.route('/register').post(validate(register), controller.register);
  */
 router.route('/login').post(validate(login), controller.login);
 
+/**
+ * @api {post} v1/auth/password/reset Password Reset Request
+ * @apiDescription Request a password reset for a given user/email
+ * @apiVersion 1.0.0
+ * @apiName Password
+ * @apiGroup Auth
+ * @apiPermission public
+ *
+ * @apiParam  {String}         email     User's email
+ * @apiParam  {String}         url       Link to your reset password page/form
+ *
+ * @apiSuccess  {String}  user.id             User's id
+ * @apiSuccess  {String}  user.name           User's name
+ * @apiSuccess  {String}  user.email          User's email
+ * @apiSuccess  {String}  user.role           User's role
+ * @apiSuccess  {Date}    user.createdAt      Timestamp
+ * 
+ * @apiSuccess  {String}  message             Message noting an email was sent
+ *
+ * @apiError (Bad Request 400)   ValidationError  Missing email and/or url parameters
+ * @apiError (Not Found 404)     ValidationError  Email in request was not found 
+ * @apiError (Conflict 409)      BadState         An existing, non-expired reset token already exists
+ */
+router.route('/password/reset').post(validate(passwordReset), controller.passwordReset);
+
 router
   .route('/password/reset/change')
   .post(validate(passwordResetChange), controller.passwordResetChange);
-router.route('/password/reset').post(validate(passwordReset), controller.passwordReset);
 
 /**
  * @api {post} v1/auth/refresh-token Refresh Token

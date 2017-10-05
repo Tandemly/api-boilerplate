@@ -33,9 +33,32 @@ module.exports = {
         .email()
         .required(),
       url: Joi.string()
-        .uri()
+        // .uri()
         .trim()
         .required(),
+    },
+  },
+
+  passwordResetChange: {
+    body: {
+      email: Joi.string()
+        .email()
+        .required(),
+      password: Joi.string()
+        .required()
+        .max(128),
+      confirm: Joi.string()
+        .required()
+        .max(128)
+        .valid(Joi.ref('password'))
+        .options({
+          language: {
+            any: {
+              allowOnly: 'Passwords do not match',
+            },
+          },
+        }),
+      token: Joi.string().required(),
     },
   },
 

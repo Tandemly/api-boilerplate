@@ -7,6 +7,7 @@ const jwt = require('jwt-simple');
 const uuidv4 = require('uuid/v4');
 const APIError = require('../utils/APIError');
 const ResetToken = require('./resetToken.model');
+const RefreshToken = require('./refreshToken.model');
 const { env, jwtSecret, jwtExpirationInterval } = require('../../config/vars');
 
 /**
@@ -145,6 +146,23 @@ userSchema.statics = {
   },
 
   /**
+   * Get user by email address
+   *
+   * @param {String} email - The email address of the user.
+   * @returns {Promise<User, APIError>}
+   */
+  async getByEmail(email) {
+    const user = await this.findOne({ email }).exec();
+    if (!user) {
+      throw new APIError({
+        status: httpStatus.NOT_FOUND,
+        message: 'User email not found or invalid',
+      });
+    }
+    return user;
+  },
+
+  /**
    * Find user by email and tries to generate a JWT token
    *
    * @param {ObjectId} id - The objectId of user.
@@ -190,23 +208,57 @@ userSchema.statics = {
     }
 
     const user = await this.findOne({ email }).exec();
-    const existingToken = ResetToken.findOne({ email }).exec();
+    const existingToken = await ResetToken.findOne({ userEmail: email }).exec();
+    const now = moment();
     const err = {
+      message: 'Non-existant email',
       status: httpStatus.NOT_FOUND,
       isPublic: true,
     };
-    if (user) {
-      if (existingToken) {
+
+    if (!user) {
+      throw new APIError(err);
+    }
+
+    if (existingToken) {
+      if (moment(existingToken.expires).isBefore(now)) {
+        // token expired, remove and continue
+        const deleted = await ResetToken.findByIdAndRemove(existingToken._id).exec();
+      } else {
+        // Otherwise, token still in effect, can't create a new one
         err.status = httpStatus.CONFLICT;
         err.message = 'A reset token has already been created for this email';
-      } else {
-        const token = ResetToken.generate(user);
-        return { user, resetToken: token };
+        throw new APIError(err);
       }
     }
 
-    err.message = 'Non-existant email';
-    throw new APIError(err);
+    // generate token and return to caller
+    const token = ResetToken.generate(user, url);
+    return { user, resetToken: token };
+  },
+
+  /**
+   * Finds a valid matching reset token for `email` and `token`
+   * and removes matching resest token and any existing refresh 
+   * token still existing for this user's email.
+   *
+   * @param {String} email - email address of user
+   * @param {String} token - password reset token
+   * @returns {Promise<User[]>}
+   */
+  async matchAndClearAllTokens(options) {
+    const { email, token } = options;
+    const match = await ResetToken.findOne({ userEmail: email, token }).exec();
+    if (!match) {
+      throw new APIError({
+        status: httpStatus.CONFLICT,
+        message: 'No matching reset token found for email',
+      });
+    }
+    // Remove existing reset token
+    const deletedReset = await ResetToken.findByIdAndRemove(match._id).exec();
+    const deletedRefreshes = await RefreshToken.remove({ userEmail: email }).exec();
+    return { nRefreshRemoved: deletedRefreshes.nRemoved, resetRemoved: !!deletedReset };
   },
 
   /**
