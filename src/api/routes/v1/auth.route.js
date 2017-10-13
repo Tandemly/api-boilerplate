@@ -24,6 +24,7 @@ const router = express.Router();
  * @apiParam  {String}          email     User's email
  * @apiParam  {String{6..128}}  password  User's password
  *
+ * @apiSuccess (Created 201) {Object}  token               JWT Token information
  * @apiSuccess (Created 201) {String}  token.tokenType     Access Token's type
  * @apiSuccess (Created 201) {String}  token.accessToken   Authorization Token
  * @apiSuccess (Created 201) {String}  token.refreshToken  Token to get a new accessToken
@@ -32,6 +33,7 @@ const router = express.Router();
  *                                                   in miliseconds
  * @apiSuccess (Created 201) {String}  token.timezone      The server's Timezone
  *
+ * @apiSuccess (Created 201) {Object}  user            User info for registered user
  * @apiSuccess (Created 201) {String}  user.id         User's id
  * @apiSuccess (Created 201) {String}  user.name       User's name
  * @apiSuccess (Created 201) {String}  user.email      User's email
@@ -53,6 +55,7 @@ router.route('/register').post(validate(register), controller.register);
  * @apiParam  {String}         email     User's email
  * @apiParam  {String{..128}}  password  User's password
  *
+ * @apiSuccess  {Object}  token               JWT Token information
  * @apiSuccess  {String}  token.tokenType     Access Token's type
  * @apiSuccess  {String}  token.accessToken   Authorization Token
  * @apiSuccess  {String}  token.refreshToken  Token to get a new accessToken
@@ -60,6 +63,7 @@ router.route('/register').post(validate(register), controller.register);
  * @apiSuccess  {Number}  token.expiresIn     Access Token's expiration time
  *                                                   in miliseconds
  *
+ * @apiSuccess  {Object}  user                User account matching email
  * @apiSuccess  {String}  user.id             User's id
  * @apiSuccess  {String}  user.name           User's name
  * @apiSuccess  {String}  user.email          User's email
@@ -82,6 +86,7 @@ router.route('/login').post(validate(login), controller.login);
  * @apiParam  {String}         email     User's email
  * @apiParam  {String}         url       Link to your reset password page/form
  *
+ * @apiSuccess  {Object}  user                User account matching email
  * @apiSuccess  {String}  user.id             User's id
  * @apiSuccess  {String}  user.name           User's name
  * @apiSuccess  {String}  user.email          User's email
@@ -96,6 +101,32 @@ router.route('/login').post(validate(login), controller.login);
  */
 router.route('/password/reset').post(validate(passwordReset), controller.passwordReset);
 
+/**
+ * @api {post} v1/auth/password/reset/change Password Reset
+ * @apiDescription Request a password change with a valid reset token and email
+ * @apiVersion 1.0.0
+ * @apiName Password Reset
+ * @apiGroup Auth
+ * @apiPermission public
+ *
+ * @apiParam  {String}         email     User's email
+ * @apiParam  {String}         password  New password for this user
+ * @apiParam  {String}         confirm   Matching password confirmation of above
+ * @apiParam  {String}         token     Valid reset token (passed to `url` via query params)
+ *
+ * @apiSuccess  {Object}  user                User info for valid email param
+ * @apiSuccess  {String}  user.id             User's id
+ * @apiSuccess  {String}  user.name           User's name
+ * @apiSuccess  {String}  user.email          User's email
+ * @apiSuccess  {String}  user.role           User's role
+ * @apiSuccess  {Date}    user.createdAt      Timestamp
+ * 
+ * @apiSuccess  {String}  message             Message noting an the password was reset
+ *
+ * @apiError (Bad Request 400)   ValidationError  Missing email, token or password/confirm parameters
+ * @apiError (Not Found 404)     ValidationError  Email in request was not found or invalid 
+ * @apiError (Conflict 409)      BadState         No matching reset token found
+ */
 router
   .route('/password/reset/change')
   .post(validate(passwordResetChange), controller.passwordResetChange);
@@ -120,10 +151,6 @@ router
  * @apiError (Unauthorized 401)  Unauthorized     Incorrect email or refreshToken
  */
 router.route('/refresh-token').post(validate(refresh), controller.refresh);
-
-/**
- * TODO: POST /v1/auth/reset-password
- */
 
 /**
  * @apiIgnore Not Implemented for this service
